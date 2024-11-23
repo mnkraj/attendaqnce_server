@@ -1,8 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import os
@@ -23,36 +22,26 @@ url2 = os.getenv("attendance_url")
 app = Flask(__name__)
 CORS(app)
 
-CHROMEDRIVER_URL = "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip"
+GECKODRIVER_URL = "https://github.com/mozilla/geckodriver/releases/download/v0.33.0/geckodriver-v0.33.0-linux64.tar.gz"
 
 def download_driver():
     """
-    Download and extract ChromeDriver to /tmp directory for temporary use.
+    Download and extract geckodriver to /tmp directory for temporary use.
     """
-    driver_zip_path = "/tmp/chromedriver.zip"
-    extracted_path = "/tmp/chromedriver"
+    driver_tar_path = "/tmp/geckodriver.tar.gz"
+    extracted_path = "/tmp/geckodriver"
     if not os.path.exists(extracted_path):
-        print("Downloading ChromeDriver...")
-        response = requests.get(CHROMEDRIVER_URL, stream=True)
-        with open(driver_zip_path, "wb") as f:
+        print("Downloading geckodriver...")
+        response = requests.get(GECKODRIVER_URL, stream=True)
+        with open(driver_tar_path, "wb") as f:
             shutil.copyfileobj(response.raw, f)
-        shutil.unpack_archive(driver_zip_path, "/tmp/")
+        shutil.unpack_archive(driver_tar_path, "/tmp/")
         os.chmod(extracted_path, 0o755)  # Make it executable
     return extracted_path
 
 def wait_for_network_idle(driver, timeout=10):
-    driver.execute_cdp_cmd("Network.enable", {})
-    inflight_requests = set()
-
-    driver.execute_cdp_cmd("Runtime.evaluate", {
-        "expression": """
-        (() => {
-            window.requests = new Set();
-            window.onRequestSent = (req) => window.requests.add(req);
-            window.onRequestFinished = (req) => window.requests.delete(req);
-        })()
-        """
-    })
+    # Simplified for compatibility with Firefox
+    time.sleep(timeout)
 
 def att(driver, regn):
     driver.get(url1)
@@ -105,18 +94,18 @@ def get_attendance():
         if not regn:
             return jsonify({'error': 'Registration number is required'}), 400
 
-        chrome_options = Options()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--disable-gpu")
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--window-size=1920x1080")
-        chrome_options.binary_location = "/usr/bin/google-chrome"  # Change if bundling Chrome manually
+        firefox_options = Options()
+        firefox_options.add_argument("--headless")
+        firefox_options.add_argument("--disable-gpu")
+        firefox_options.add_argument("--no-sandbox")
+        firefox_options.add_argument("--disable-dev-shm-usage")
+        firefox_options.add_argument("--width=1920")
+        firefox_options.add_argument("--height=1080")
 
         driver_path = download_driver()
         service = Service(driver_path)  # Use the Service object to specify the path
 
-        driver = webdriver.Chrome(service=service, options=chrome_options)  # Updated syntax
+        driver = webdriver.Firefox(service=service, options=firefox_options)  # Updated syntax
 
         attendance = att(driver, regn)
         driver.quit()
