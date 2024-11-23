@@ -1,44 +1,43 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-# from selenium.webdriver.chrome import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import os
-from dotenv import load_dotenv
+import shutil
+import requests
 from flask import Flask, request, jsonify
-import time
 from flask_cors import CORS
-
-
-
+import time
+from dotenv import load_dotenv
 
 load_dotenv()
 
 id = os.getenv("regn")
 pwd = os.getenv("pwd")
 url1 = os.getenv("login_url")
-url2 = os.getenv("attendacnce_url")
+url2 = os.getenv("attendance_url")
 
 app = Flask(__name__)
 CORS(app)
 
-# resources={r"/*": {"origins": "https://nitjsr.vercel.app"}}
+CHROMEDRIVER_URL = "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip"
 
-def wait_for_network_idle(driver, timeout=10):
-    driver.execute_cdp_cmd("Network.enable", {})
-    inflight_requests = set()
-
-    driver.execute_cdp_cmd("Runtime.evaluate", {
-        "expression": """
-        (() => {
-            window.requests = new Set();
-            window.onRequestSent = (req) => window.requests.add(req);
-            window.onRequestFinished = (req) => window.requests.delete(req);
-        })()
-        """
-    })
+def download_driver():
+    """
+    Download and extract ChromeDriver to /tmp directory for temporary use.
+    """
+    driver_zip_path = "/tmp/chromedriver.zip"
+    extracted_path = "/tmp/chromedriver"
+    if not os.path.exists(extracted_path):
+        print("Downloading ChromeDriver...")
+        response = requests.get(CHROMEDRIVER_URL, stream=True)
+        with open(driver_zip_path, "wb") as f:
+            shutil.copyfileobj(response.raw, f)
+        shutil.unpack_archive(driver_zip_path, "/tmp/")
+        os.chmod(extracted_path, 0o755)  # Make it executable
+    return extracted_path
 
 def att(driver, regn):
     driver.get(url1)
@@ -90,15 +89,21 @@ def get_attendance():
         regn = data.get('regn')
         if not regn:
             return jsonify({'error': 'Registration number is required'}), 400
+
         chrome_options = Options()
-        chrome_options.page_load_strategy = "none"
         chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--window-size=1920,10080")  
         chrome_options.add_argument("--disable-gpu")
-        # service = Service()  
-        driver = webdriver.Chrome(options=chrome_options)
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("--window-size=1920x1080")
+        chrome_options.binary_location = "/usr/bin/google-chrome"  # Change if bundling Chrome manually
+
+        driver_path = download_driver()
+        driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
+
         attendance = att(driver, regn)
         driver.quit()
+
         return jsonify({'status': 'success', 'attendance': attendance})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
