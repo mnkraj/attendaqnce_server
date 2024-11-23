@@ -39,6 +39,20 @@ def download_driver():
         os.chmod(extracted_path, 0o755)  # Make it executable
     return extracted_path
 
+def wait_for_network_idle(driver, timeout=10):
+    driver.execute_cdp_cmd("Network.enable", {})
+    inflight_requests = set()
+
+    driver.execute_cdp_cmd("Runtime.evaluate", {
+        "expression": """
+        (() => {
+            window.requests = new Set();
+            window.onRequestSent = (req) => window.requests.add(req);
+            window.onRequestFinished = (req) => window.requests.delete(req);
+        })()
+        """
+    })
+
 def att(driver, regn):
     driver.get(url1)
     WebDriverWait(driver, 100).until(
