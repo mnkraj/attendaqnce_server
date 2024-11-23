@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -113,7 +114,9 @@ def get_attendance():
         chrome_options.binary_location = "/usr/bin/google-chrome"  # Change if bundling Chrome manually
 
         driver_path = download_driver()
-        driver = webdriver.Chrome(executable_path=driver_path, options=chrome_options)
+        service = Service(driver_path)  # Use the Service object to specify the path
+
+        driver = webdriver.Chrome(service=service, options=chrome_options)  # Updated syntax
 
         attendance = att(driver, regn)
         driver.quit()
@@ -121,6 +124,7 @@ def get_attendance():
         return jsonify({'status': 'success', 'attendance': attendance})
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
