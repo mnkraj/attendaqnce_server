@@ -1,10 +1,4 @@
-
-# opencv-python-headless
-selenium
-# base64
-# streamlit
-# pytesseract
-flask_cors
-flask
+Flask
+flask-cors
 python-dotenv
-python-time
+playwright
