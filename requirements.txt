@@ -1,5 +1,6 @@
 Flask
 flask-cors
 python-dotenv
-playwright
+#playwright
 selenium
+requests
