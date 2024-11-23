@@ -1,0 +1,9 @@
+{
+    "version": 2,
+    "builds": [
+      { "src": "attendance.py", "use": "@vercel/python" }
+    ],
+    "routes": [
+      { "src": "/(.*)", "dest": "/attendance.py" }
+    ]
+}
