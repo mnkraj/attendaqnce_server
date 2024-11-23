@@ -6,4 +6,5 @@ selenium
 # pytesseract
 flask_cors
 flask
-# dotenv
+python-dotenv
+python-time
